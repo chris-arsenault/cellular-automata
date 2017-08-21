@@ -9,10 +9,13 @@ def bitwise(p, place)
 end
 
 def build_image
-  (2 ** 8).times do |p|
-    pattern = [bitwise(p, 7), bitwise(p, 6), bitwise(p, 5), bitwise(p, 4), bitwise(p, 3), bitwise(p, 2), bitwise(p, 1), bitwise(p, 0)]
+  locality = 2
+  length = 2*locality + 1
+  iterations = (2 ** length)
+  (2**iterations).times do |p|
+    pattern = iterations.times.map { |i| bitwise(p,i)}
     puts "Doing pattern #{p} with pattern #{pattern.join(', ')}"
-      @automata = Automata.new(1000, pattern)
+      @automata = Automata.new(1000, pattern, locality)
       @automata.loop(500)
 
       generated_image = Image.new(@automata.width, @automata.height) { self.background_color = 'black' }

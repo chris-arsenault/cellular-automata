@@ -1,7 +1,9 @@
 class CellGrid
   attr_reader :width, :cells
 
-  def initialize(width)
+  def initialize(width, locality = 1)
+   @locality = locality
+
     if width %2 == 0
       width += 1
     end
@@ -18,16 +20,12 @@ class CellGrid
 
   def local_state(column)
     result = ''
-    if column == 0
-      result += '0'
-    else
-      result += @cells[height - 2][column - 1].to_s
-    end
-    result += @cells[height - 2][column].to_s
-    if column == width - 1
-      result += '0'
-    else
-      result += @cells[height - 2][column + 1].to_s
+    ((column - @locality)..(column + @locality)).to_a.each do |r|
+      if r < 0 || r > width - 1
+        result += '0'
+      else
+        result += @cells[height - 2][r].to_s
+      end
     end
     result
   end

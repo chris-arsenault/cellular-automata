@@ -5,11 +5,12 @@ require 'byebug'
 class Automata
   attr_reader :grid
 
-  def initialize(width, pattern)
-    @grid = CellGrid.new(width)
+  def initialize(width, pattern, locality)
+    @locality = locality
+    @grid = CellGrid.new(width, @locality)
     @grid[0, @grid.width/2] = 1
 
-    @pattern = Pattern.new(pattern)
+    @pattern = Pattern.new(pattern, @locality)
   end
 
   def loop(times)
