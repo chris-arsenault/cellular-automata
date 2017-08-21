@@ -23,7 +23,7 @@ def build_image
           end
         end
       end
-      generated_image.write("#{p}.jpg")
+      generated_image.write("output/#{p}.jpg")
   end
 end
 
