@@ -35,7 +35,7 @@ class CellGrid
   end
 
   def print_row(row)
-    puts @cells[row].join('')
+    Log.debug @cells[row].join('')
   end
 
   def [](row, column)

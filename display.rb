@@ -1,32 +1,73 @@
-require 'gosu'
-require './automata'
 require 'RMagick'
 include Magick
+
+require './automata'
+require './log'
+
+LOCALITY = 1
+POOL_SIZE = 6
+THREADING_METHOD = :thread
+WIDTH = 200
+HEIGHT = 100
+Log.debug_mode = true
 
 def bitwise(p, place)
   bit = 2 ** place
   p & bit == bit
 end
 
-def build_image
-  locality = 2
-  length = 2*locality + 1
-  iterations = (2 ** length)
-  (2**iterations).times do |p|
-    pattern = iterations.times.map { |i| bitwise(p,i)}
-    puts "Doing pattern #{p} with pattern #{pattern.join(', ')}"
-      @automata = Automata.new(1000, pattern, locality)
-      @automata.loop(500)
+def single_iteration(iterations, locality, pattern_index)
+  pattern = iterations.times.map {|i| bitwise(pattern_index, i)}
+  Log.debug "Doing pattern #{pattern_index} with pattern #{pattern.join(', ')}"
+  @automata = Automata.new(WIDTH, pattern, locality)
+  @automata.loop(HEIGHT)
 
-      generated_image = Image.new(@automata.width, @automata.height) { self.background_color = 'black' }
-      @automata.grid.height.times do |row|
-        @automata.grid.width.times do |column|
-          if @automata.grid[row,column] == '1'
-            generated_image.pixel_color(column, row, 'red')
-          end
+  generated_image = Image.new(@automata.width, @automata.height) {self.background_color = 'black'}
+  @automata.grid.height.times do |row|
+    @automata.grid.width.times do |column|
+      if @automata.grid[row, column] == '1'
+        generated_image.pixel_color(column, row, 'red')
+      end
+    end
+  end
+  generated_image.write("output/#{pattern_index}.jpg")
+end
+
+def build_image
+  `mkdir output`
+  `rm output/*`
+  iterations = (2 ** (2*LOCALITY + 1))
+
+  run_job = Proc.new do |jobs|
+    begin
+      jobs.each do |pattern|
+        single_iteration(iterations, LOCALITY, pattern)
+      end
+    rescue ThreadError => e
+      Log.debug e.message
+    end
+  end
+
+  case THREADING_METHOD
+    when :none
+      run_job.call
+    when :thread
+      workers = []
+      (2**iterations).times.each_slice(POOL_SIZE).to_a.each do |slice|
+        workers.push(Thread.new do
+          run_job.call(slice)
+        end)
+      end
+      workers.map(&:join)
+    when :fork
+      (2**iterations).times.each_slice(POOL_SIZE).to_a.each do |slice|
+        fork do
+          run_job.call(slice)
         end
       end
-      generated_image.write("output/#{p}.jpg")
+      Process.waitall
+    else
+      Log.debug 'dont be a derp!!'
   end
 end
 
